@@ -1,36 +1,49 @@
 # Contributing Guidelines
 
-## Type hinting
+These are a few guidelines to help keep the codebase clean, consistent, and easy to maintain.
+
+---
+
+## Type Hinting
+
 Make sure every function argument, return value, and class attribute is type hinted. This makes debugging easier and works well with static type checkers like Ruff.
 
-Example :-
-Do this 
+### Example
+
+**Do this:**
+
 ```python
 func(num : int, config : data_config, learning_rate : float, train_mode : bool) -> None:
     ...
 ```
-Instead of 
+
+**Instead of:**
+
 ```python
 func(num, config, learning_rate, train_mode):
     ...
 ```
 
-## Docstring
+---
 
-Make sure to add docstrings to every function/class you define. The docstring should include the function arguments, brief description about what the function does, and what the function returns with type hinting.
+## Docstrings
 
-Example :-
+Make sure to add docstrings to every function/class you define. The docstring should include the function arguments, a brief description of what the function does, and what the function returns with type hinting.
+
+### Example
+
 ```python
 class MLP(nn.Module):
     '''
-    A class definition of a Multi - layer perceptron typically used in transformers
-    Uses 2 linear layers which act as up_projection (d_model -> hidden) and down_projection
-    (hidden -> d_model), with an activation function (ReLU) in between
+    A class definition of a Multi-layer Perceptron typically used in transformers.
+    Uses 2 linear layers which act as up_projection (d_model -> hidden) and
+    down_projection (hidden -> d_model), with a ReLU activation in between.
     '''
-    
+
     def __init__(self, config : model_config):
         '''
         Instantiates the class.
+
         Args :-
             config (model_config) : Dataclass with model hyperparameters
         '''
@@ -38,29 +51,37 @@ class MLP(nn.Module):
         self.up_proj = nn.Linear(config.d_model, config.hidden)
         self.down_proj = nn.Linear(config.hidden, config.d_model)
 
-    def forward(self,x) -> Tensor:
+    def forward(self, x) -> Tensor:
         '''
         Calls the forward function on the input tensor (x)
+
         Args :-
             x (Tensor) : Input Tensor of shape (B, T, C)
-        Returns :-  
+
+        Returns :-
             out (Tensor) : Output Tensor after processing with the same shape
         '''
         out = self.down_proj(F.relu(self.up_proj(x)))
         return out
 ```
 
+---
+
 ## Modularity
 
-Try to encapsulate most of the code you write into functions, so that they can be re-used in other parts of the codebase.
-Eg:
-  A function which pre-trains a model can also be used for post-training methods like SFT, DPO, GRPO, etc ...
+Try to encapsulate most of the code you write into functions so they can be reused in other parts of the codebase.
+
+For example:
+
+- A function that pre-trains a model can also be reused for post-training methods like SFT, DPO, GRPO, etc.
+
+---
 
 ## Unit Tests
 
 Every new function or class should have a corresponding unit test in that directory's `test.py` file. Tests should verify the expected behavior, output shapes (if applicable), edge cases, and failure conditions.
 
-Example:
+### Example
 
 ```python
 import unittest
@@ -93,6 +114,8 @@ class TestMLP(unittest.TestCase):
         self.assertFalse(torch.isnan(out).any())
 ```
 
+---
+
 ## Pylint
 
 Pylint is a static code analysis tool that catches bad coding practices and style issues.
@@ -102,4 +125,3 @@ It's not required, but it's a good idea to run it before opening a PR. If it poi
 ```bash
 pylint .
 ```
-
