@@ -100,7 +100,7 @@ class TestMLP(unittest.TestCase):
         """
         Ensures that the MLP preserves the expected output shape.
         """
-        config:model_config=model_config(
+        model_config=model_config(
             d_model=128,
             hidden=256
         )
