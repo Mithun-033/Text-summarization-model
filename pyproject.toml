@@ -1,0 +1,26 @@
+[project]
+name = "text-summarization-model"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "torch",
+    "optuna",
+    "numpy",
+    "pandas",
+    "torchinfo",
+    "triton-windows",
+    "rich",
+    "tqdm"
+]
+
+[[tool.uv.index]]
+name = "pytorch-cuda-build-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = {
+    index = "pytorch-cuda-build-cu128"
+}
