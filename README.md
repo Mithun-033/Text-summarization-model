@@ -9,7 +9,7 @@ A complete pipeline to train and test a deep learning model for text summarizati
 
 ```bash
 git clone https://github.com/<username>/Text-summarization-model.git
-cd CIFAR100-Image-Classification
+cd Text-summarization-model
 ```
 
 3. **Open** the project.
