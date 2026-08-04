@@ -116,7 +116,7 @@ class TestMLP(unittest.TestCase):
 
 ---
 
-## Pylint
+## Pylint (Optional)
 
 Pylint is a static code analysis tool that catches bad coding practices and style issues.
 
