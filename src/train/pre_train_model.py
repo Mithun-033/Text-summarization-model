@@ -14,6 +14,7 @@ from data.dataloaders import dataloader
 # TODO : model checkpoint loading (done)
 # TODO : docs and unittests
 # TODO : proper logging of losses, find a alternative for .json 
+# TODO : failsafe model saving
 
 # Inductor config changes to make torch.compile() better.
 
@@ -88,6 +89,7 @@ def train(
     epochs: int = 1,
     compile: bool = False,
     device="cpu",
+    debug_compile: bool = False
 ):
 
     model = SummarizationModel(model_conf).to(device)
@@ -122,7 +124,9 @@ def train(
                 "shape_padding": True,  # basically GPU's perform better if tensors have shape of a power of 2,
                 # so a tensor with dim 1000 might be slower than a tensor with shape 1024, hence we do this padding.
                 # Shld check for vram memory spike, disable if too high
-                "triton.cudagraphs": True,  # reduces python overhead according to docs
+                "triton.cudagraphs": True, # reduces python overhead according to docs
+                "trace.enabled" : debug_compile,  # enables tracing  
+                "trace.graph" : debug_compile  # shows fusion graph
             },
         )
     steps = 0
@@ -140,6 +144,7 @@ if __name__ == "__main__":
         "--compile", action="store_true"
     )  # pass the flag --compile in CLI to enable compiling
     parser.add_argument("--load_checkpoint", type="str")
+    parser.add_argument("--debug_compile", action="store_true")
 
     args = parser.parse_args()
 
@@ -153,5 +158,6 @@ if __name__ == "__main__":
         model_conf=model_config(),
         epochs=args.epochs,
         compile=args.compile,
-        device=device
+        device=device, 
+        debug_compile = args.debug_compile
     )
