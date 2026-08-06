@@ -23,7 +23,7 @@ DATA_DIR = "corpus/"
 TOKENIZER_PATH = ...
 # -----------------------------------------------------------#
 tokenizer = Tokenizer.from_pretrained(TOKENIZER_PATH)
-
+tokenizer.add_special_tokens(["<EOS>"])
 
 def worker(worker_idx: int):
     """
@@ -38,7 +38,7 @@ def worker(worker_idx: int):
 
     count = 0
     lst = []
-    EOS = tokenizer.token_to_id("<EOS>")
+    EOS = tokenizer.token_to_id("<EOS>") # shld change 
 
     with tqdm(total=SHARD_SIZE, desc=f"Shard_{worker_idx + 1}") as pbar:
         for row in ds:
@@ -49,10 +49,7 @@ def worker(worker_idx: int):
 
             if count >= SHARD_SIZE:
                 break
-    np.save(
-        os.path.join(DATA_DIR, f"shard_{worker_idx}.npy"), np.array(lst, dtype=np.int16)
-    )
-
+    np.save(os.path.join(DATA_DIR, f"shard_{worker_idx}.npy"), np.array(lst, dtype=np.int16))
 
 if __name__ == "__main__":
     with Pool(NUM_WORKERS) as p:
