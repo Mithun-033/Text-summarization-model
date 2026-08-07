@@ -1,13 +1,15 @@
 import argparse
 from typing import Any
-from tqdm import tqdm
+
 import torch
+import torch._inductor.config as inductor_config
 import torch.nn as nn
 import torch.optim as optim
-import torch._inductor.config as inductor_config
-from model.config import train_config, model_config
-from model.model import SummarizationModel
+from tqdm import tqdm
+
 from data.dataloaders import dataloader
+from model.config import model_config, train_config
+from model.model import SummarizationModel
 
 # TODO : Async model checkpointing
 # TODO : train & eval step (done)
@@ -123,7 +125,7 @@ def train(
                 "max_autotune": True,  # uses triton to optimizer mat mults, again a no brainer for a static model like ours
                 "shape_padding": True,  # basically GPU's perform better if tensors have shape of a power of 2,
                 # so a tensor with dim 1000 might be slower than a tensor with shape 1024, hence we do this padding.
-                # Shld check for vram memory spike, disable if too high
+                # Shld check for vram memory spike & disable if too high
                 "triton.cudagraphs": True, # reduces python overhead according to docs
                 "trace.enabled" : debug_compile,  # enables tracing  
                 "trace.graph" : debug_compile  # shows fusion graph
@@ -140,17 +142,13 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float)
     parser.add_argument("--batch_size", type=int)
     parser.add_argument("--weight_decay", type=float)
-    parser.add_argument(
-        "--compile", action="store_true"
-    )  # pass the flag --compile in CLI to enable compiling
+    parser.add_argument("--compile", action="store_true")  # pass the flag --compile in CLI to enable compiling
     parser.add_argument("--load_checkpoint", type="str")
     parser.add_argument("--debug_compile", action="store_true")
 
     args = parser.parse_args()
 
-    train_conf = train_config(
-        lr=args.lr, batch_size=args.batch_size, weight_decay=args.weight_decay
-    )
+    train_conf = train_config(lr=args.lr, batch_size=args.batch_size, weight_decay=args.weight_decay)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train(
         model_path=args.load_checkpoint,

@@ -1,7 +1,6 @@
 """
 Script to tokenize data that is streamed from a huggingface library parallely using multiprocessing and store them in .npy shards.
 """
-
 import os
 from multiprocessing import Pool
 
@@ -18,12 +17,16 @@ from tokenizers import Tokenizer
 HUGGING_FACE_LINK = ...
 SHARD_SIZE = 1_000_000_000
 NUM_SHARDS = ...
-NUM_WORKERS = os.cup_count()
+NUM_WORKERS = os.cpu_count()
 DATA_DIR = "corpus/"
-TOKENIZER_PATH = ...
+TOKENIZER_PATH = "EleutherAI/gpt-neox-20b"
 # -----------------------------------------------------------#
-tokenizer = Tokenizer.from_pretrained(TOKENIZER_PATH)
-tokenizer.add_special_tokens(["<EOS>"])
+def make_tokenizer():
+    tokenizer = Tokenizer.from_pretrained(TOKENIZER_PATH)
+    tokenizer.add_special_tokens(["<EOS>"])
+    return tokenizer
+
+tokenizer = make_tokenizer()
 
 def worker(worker_idx: int):
     """
@@ -38,7 +41,7 @@ def worker(worker_idx: int):
 
     count = 0
     lst = []
-    EOS = tokenizer.token_to_id("<EOS>") # shld change 
+    EOS = tokenizer.token_to_id("<EOS>") 
 
     with tqdm(total=SHARD_SIZE, desc=f"Shard_{worker_idx + 1}") as pbar:
         for row in ds:

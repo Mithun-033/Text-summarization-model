@@ -12,7 +12,9 @@ dependencies = [
     "torchinfo",
     "triton-windows",
     "rich",
-    "tqdm"
+    "tqdm",
+    "datasets>=5.0.1",
+    "tokenizers>=0.23.1",
 ]
 
 [[tool.uv.index]]
