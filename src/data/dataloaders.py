@@ -1,8 +1,8 @@
 from torch.utils.data import DataLoader, Dataset
 from src.model.config import data_config
 
-class data(Dataset):
-    def __init__(self, path):
+class CustomDataset(Dataset):
+    def __init__(self,path,block_size):
         super().__init__()
         self.path = path
         self.block_size = block_size
@@ -16,10 +16,30 @@ class data(Dataset):
             self.blocks_per_shard.append(num_blocks)
         self.cumsum = np.cumsum(self.blocks_per_shard)
 
-    def __len__(self): ...
+    def __len__(self):
+        return int(self.cumsum[-1])
 
-    def __getitem__(self, idx): ...
+    
+    def __getitem__(self,index):
+        idx = 0
+        for i in range(len(self.cumsum)):
+            if self.cumsum[i] > index:
+                idx = i
+                break
+        
+        local_idx = 0
+        if idx ==0 :
+            local_idx = index
+        else:
+            local_idx = index - int(self.cumsum[idx-1])
 
+        shard = np.load(self.path[idx] , mmap_mode='r')# this mmap_mode = 'r' do not loads the whole file into ram, just the sliced array
+        start = local_idx*self.block_size
+
+        x = shard[start : start + self.block_size]
+        y = shard[start+1 : start+self.block_size+1]
+
+        return torch.from_numpy(x.astype(np.int64)), torch.from_numpy(y.astype(np.int64))
 
 class dataloader(Dataset):
     def __init__(self, data_config, train_path, val_path):
