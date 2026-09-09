@@ -1,3 +1,5 @@
+import torch
+import numpy as np
 from torch.utils.data import DataLoader, Dataset
 from src.model.config import data_config
 
@@ -41,19 +43,21 @@ class CustomDataset(Dataset):
 
         return torch.from_numpy(x.astype(np.int64)), torch.from_numpy(y.astype(np.int64))
 
-class dataloader(Dataset):
+    
+class get_dataloader:
     def __init__(self, data_config, train_path, val_path):
         super().__init__()
         assert train_path is not None, "train_path cannot be None"
         assert val_path is not None, "val_path cannot be None"
-        self.train = data(train_path)
-        self.val = data(val_path)
+        self.train = CustomDataset(train_path)
+        self.val = CustomDataset(val_path)
 
         assert data_config is not None, "data_config cannot be None"
         self.data_config = data_config
 
         
     def train_dataloader(self):
+        dataset = CustomDataset(self.train_path,self.block_size)
         return DataLoader(
             self.train,
             batch_size=self.data_config.batch_size,
@@ -64,7 +68,7 @@ class dataloader(Dataset):
             shuffle = True
         )
 
-    def val_dataloader(self): 
+    def val_dataloader(self):
         return DataLoader(
             self.val,
             batch_size=self.data_config.batch_size,
@@ -74,3 +78,20 @@ class dataloader(Dataset):
             in_order=self.data_config.in_order,
             shuffle = False
         )
+
+
+
+# for testing purpose only
+if __name__ =="__main__":
+    train_path = ['corpus/shard_0.npy']
+    val_path = ['corpus/shard_1.npy']
+
+    ds = get_dataloader(train_path,val_path,block_size=512,batch_size=8,num_workers=2)
+
+    train_loader = ds.train_dataloader()
+
+    for i in range(1):
+        sample_x,sample_y = next(iter(train_loader))
+
+        print(sample_x.shape)
+        print(sample_y.shape)
