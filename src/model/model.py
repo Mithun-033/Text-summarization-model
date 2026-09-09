@@ -5,11 +5,43 @@ from config import model_config
 from torch.nn import functional as F
 import math
 import torch.nn.functional as F
+from torchinfo import summary
 
 # HEREIN THIS FILE THE WHOLE ARCHITECTURE OF TRANSFORMERS AND ATTENTION IS DEFINED MANUALLY FOR BETTER UNDERDSTANDING OF THE FLOW OF 
 # MATHS AND MATRICES
 
 # Although it can be implemented by PyTorch F.scaled_dot_product_attention(q,k,v)
+class RoPE(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        # freq formula = 1 / (10_000) ** (2i / dh),  base_freq = 10k, dh = head_size
+        self.inv_freqs = 1 / (config.base_freq ** (torch.arange(0,config.head_size, 2) / config.head_size)) # (dh // 2)
+
+    def forward(self,q,k):
+        _,T,_,H = q.shape
+
+        time_steps = torch.arange(0,T)
+        freqs = time_steps.unsqueeze(dim = 1) @ self.inv_freqs.unsqueeze(dim = 0) # (T,1) @ (1,dh//2) = (T,dh//2), basically outer_product
+        # this is done to get varying freqs for each time step, for each pair of head dims.
+
+        cos = torch.cos(freqs).reshape(1,T,1,H//2) # broadcasting to all batches and all heads
+        sin = torch.sin(freqs).reshape(1,T,1,H//2)
+
+        # get the even and odd head_size dims for all heads at every time step
+        q_even, q_odd = q[..., 0::2], q[..., 1::2]
+        k_even, k_odd = k[..., 0::2], k[..., 1::2]
+
+        # rotate according to the 2d rotation matrix
+        q_out = torch.empty_like(q)
+        q_out[..., 0::2] = q_even * cos - q_odd * sin
+        q_out[..., 1::2] = q_even * sin + q_odd * cos
+
+        k_out = torch.empty_like(k)
+        k_out[..., 0::2] = k_even * cos - k_odd * sin
+        k_out[..., 1::2] = k_even * sin + k_odd * cos
+
+        return q_out, k_out
+
 
 class TransformerBlock(nn.Module):
 
@@ -48,6 +80,7 @@ class AttentionBlock(nn.Module):
         # THE CAUSAL MASK
         # Creates a (512, 512) grid of 1s and 0s. 
         # register_buffer means PyTorch saves it, but the optimizer doesn't train it.
+        self.rope = RoPE(config)
         self.register_buffer(
             "bias", 
             torch.tril(torch.ones(config.block_size, config.block_size))
@@ -74,7 +107,7 @@ class AttentionBlock(nn.Module):
         k = k.view(B, T ,self.n_heads , C//self.n_heads).transpose(1,2)
         v = v.view(B, T ,self.n_heads , C//self.n_heads).transpose(1,2)
 
-
+        q,k = self.rope(q,k)
         # NOW APPLYING THE ACTUAL TRANSFORMER MATH
         att = (q @ k.transpose(-2,-1)) * (1/(math.sqrt(k.size(-1))))
 
@@ -140,14 +173,7 @@ class SummarizationModel(nn.Module):
         B,T = x.size() #(4,512)
 
         # extracting the token embeddings from wte
-        toke_emb = self.wte(x) #(4,512,384)
-
-        #creating a tensor for the position of the tokens for that 512 batch from index 0 to 512
-        pos = torch.arange(0,T, dtype=torch.long , device= x.device)
-
-        pos_emb = self.wpe(pos)
-
-        embeddings = toke_emb+pos_emb
+        embeddings = self.wte(x) #(4,512,384)
 
         #passing through each block
         for block in self.blocks:
@@ -165,3 +191,4 @@ class SummarizationModel(nn.Module):
 if __name__ =="__main__":
     config = model_config()
     model = SummarizationModel(config)
+    summary(model)
